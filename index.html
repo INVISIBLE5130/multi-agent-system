@@ -56,17 +56,29 @@
         var INFECTION_DISTANCE = 20;
         var INFECTION_DISTANCE_SQUARED = INFECTION_DISTANCE * INFECTION_DISTANCE;
 
-        var NUM_OF_CHARTS = 1;
-        var NUM_GOODS = 100;
-        var NUM_EVILS = 100;
+        let NUM_OF_CHARTS = 3;
+        let NUM_GOODS = 100;
+        let NUM_EVILS = 100;
 
-        var healthy_icon = new Image();
-        healthy_icon.src = "assets/increase.png";
-        var infected_icon = new Image();
-        infected_icon.src = "assets/decrease.png";
-        var good_icon = new Image();
+        let increase_icon = new Image();
+        increase_icon.src = "assets/increase.png";
+        let decrease_icon = new Image();
+        decrease_icon.src = "assets/decrease.png";
+        let d_increase_icon = new Image();
+        d_increase_icon.src = "assets/d_increase.png";
+        let d_decrease_icon = new Image();
+        d_decrease_icon.src = "assets/d_decrease.png";
+        let b_increase_icon = new Image();
+        b_increase_icon.src = "assets/b_increase.png";
+        let b_decrease_icon = new Image();
+        b_decrease_icon.src = "assets/b_decrease.png";
+        let nft_increase_icon = new Image();
+        nft_increase_icon.src = "assets/nft_increase.png";
+        let nft_decrease_icon = new Image();
+        nft_decrease_icon.src = "assets/nft_decrease.png";
+        let good_icon = new Image();
         good_icon.src = "assets/bull.png";
-        var evil_icon = new Image();
+        let evil_icon = new Image();
         evil_icon.src = "assets/bear.png";
 
         var Evil = function (id, loc, space) {
@@ -249,7 +261,9 @@
         Human.prototype.update = function (deltaTime) {
             this.steps--;
             if (this.desiredLocation == null || this.steps <= 0) {
-                this.desiredLocation = new jssim.Vector2D(XMAX / 2, YMAX / 2);
+                // this.desiredLocation = new jssim.Vector2D(XMAX / 2, YMAX / 2);
+                this.desiredLocation = new jssim.Vector2D((Math.random()-0.5)*((XMAX-XMIN)/5-DIAMETER) + this.agentLocation.x,
+                    (Math.random()-0.5)*((YMAX-YMIN)/5-DIAMETER) + this.agentLocation.y);
                 this.steps = 50 + Math.floor(Math.random() * 50);
             }
 
@@ -275,11 +289,30 @@
         };
 
         Human.prototype.draw = function (context, pos) {
-            if (this.infected) {
-                context.drawImage(infected_icon, pos.x, pos.y, 100, 100);
-            } else {
-                context.drawImage(healthy_icon, pos.x, pos.y, 100, 100);
+            const images = {
+                "Human0": {
+                    'true': d_decrease_icon,
+                    'false': d_increase_icon
+                },
+                "Human1": {
+                    'true': b_decrease_icon,
+                    'false': b_increase_icon
+                },
+                "Human2": {
+                    'true': nft_decrease_icon,
+                    'false': nft_increase_icon
+                }
             }
+            context.drawImage(
+                images[this.id][this.infected],
+                pos.x, pos.y,
+                100, 100
+            );
+            // if (this.infected) {
+            //     context.drawImage(decrease_icon, pos.x, pos.y, 100, 100);
+            // } else {
+            //     context.drawImage(increase_icon, pos.x, pos.y, 100, 100);
+            // }
         };
 
 
@@ -311,7 +344,7 @@
                 return false;
             var mysteriousObjects = space.getNeighborsWithinDistance(location, 2 * DIAMETER);
             for (var i = 0; i < mysteriousObjects.length; i++) {
-                if (mysteriousObjects[i] != agent) {
+                if (mysteriousObjects[i] !== agent) {
                     var ta = mysteriousObjects[i];
                     if (conflict(location, space.getLocation(ta.id))) return false;
                 }
@@ -340,7 +373,8 @@
                     loc = new jssim.Vector2D(Math.random() * (XMAX - XMIN - DIAMETER) + XMIN + DIAMETER / 2,
                         Math.random() * (YMAX - YMIN - DIAMETER) + YMIN + DIAMETER / 2);
                     if (x < NUM_OF_CHARTS)
-                        agent = new Human("Human" + x, new jssim.Vector2D(XMAX / 2, YMAX / 2), space);
+                        // agent = new Human("Human" + x, new jssim.Vector2D(XMAX / 2, YMAX / 2), space);
+                        agent = new Human("Human" + x, loc, space);
                     else if (x < NUM_OF_CHARTS + NUM_GOODS) {
                         agent = new Good("Good" + (x - NUM_OF_CHARTS), loc, space);
                         agent.greedy = Math.random() < 0.5;
@@ -349,11 +383,10 @@
                         agent.greedy = Math.random() < 0.5;
                     }
                     times++;
-                    if (times == 1000) {
+                    if (times === 1000) {
                         break;
                     }
                 }
-                ;
                 scheduler.scheduleRepeatingIn(agent, 1);
             }
         }
@@ -363,7 +396,7 @@
         var canvas = document.getElementById("myCanvas");
 
         setInterval(function () {
-            if (scheduler.current_time == 10000) {
+            if (scheduler.current_time === 10000) {
                 reset();
             }
             scheduler.update();
