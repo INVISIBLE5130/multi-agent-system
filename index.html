@@ -27,10 +27,42 @@
             font-family: Arial, sans-serif;
         }
 
+        .main {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+
         #myCanvas {
             margin: 75px 0 0;
             border-radius: 20px;
             border: 2px solid #fff;
+        }
+
+        .main-info {
+            display: flex;
+            flex-direction: column;
+            width: calc(90% - 800px);
+        }
+
+        .main-info h2 {
+            color: white;
+            margin: unset;
+            font-family: Arial, sans-serif;
+        }
+
+        .main-info ul {
+            list-style: none;
+        }
+
+        .main-info-dollar,
+        .main-info-bitcoin,
+        .main-info-nft {
+            color: white;
+            margin: 1vw 0;
+            font-size: 18px;
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
@@ -39,8 +71,47 @@
     <img src="assets/logo.png" alt="Logo">
     <h1>Trading market multi-agent system</h1>
 </div>
-<canvas id="myCanvas" width="800" height="600">
-</canvas>
+<div class="main">
+    <canvas id="myCanvas" width="800" height="600"></canvas>
+    <div class="main-info">
+        <h2>Data:</h2>
+        <ul>
+            <li class="main-info-dollar">Dollar:</li>
+            <li class="main-info-dollar">
+                <ul>
+                    <li class="main-info-dollar-bears">
+                        Bears: 0
+                    </li>
+                    <li class="main-info-dollar-bulls">
+                        Bulls: 0
+                    </li>
+                </ul>
+            </li>
+            <li class="main-info-bitcoin">Bitcoin:</li>
+            <li class="main-info-bitcoin">
+                <ul>
+                    <li class="main-info-bitcoin-bears">
+                        Bears: 0
+                    </li>
+                    <li class="main-info-bitcoin-bulls">
+                        Bulls: 0
+                    </li>
+                </ul>
+            </li>
+            <li class="main-info-nft">NFT:</li>
+            <li class="main-info-nft">
+                <ul>
+                    <li class="main-info-nft-bears">
+                        Bears: 0
+                    </li>
+                    <li class="main-info-nft-bulls">
+                        Bulls: 0
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
 
 <script>
     (function () {
@@ -56,9 +127,16 @@
         var INFECTION_DISTANCE = 20;
         var INFECTION_DISTANCE_SQUARED = INFECTION_DISTANCE * INFECTION_DISTANCE;
 
-        let NUM_OF_CHARTS = 3;
-        let NUM_GOODS = 100;
-        let NUM_EVILS = 100;
+        let NUM_OF_CHARTS = 3,
+            NUM_BULLS = 100,
+            NUM_BEARS = 100,
+            bears = [],
+            bulls = [],
+            charts = {
+                "Human0": null,
+                "Human1": null,
+                "Human2": null
+            }
 
         let increase_icon = new Image();
         increase_icon.src = "assets/increase.png";
@@ -80,6 +158,14 @@
         good_icon.src = "assets/bull.png";
         let evil_icon = new Image();
         evil_icon.src = "assets/bear.png";
+
+        const getAmount = (array, chart) =>
+            array.filter(({x, y}) =>
+                x < (charts[chart].x + 100) &&
+                x > (charts[chart].x - 100) &&
+                y > (charts[chart].y - 100) &&
+                y < (charts[chart].y + 100)
+            ).length
 
         var Evil = function (id, loc, space) {
             jssim.SimEvent.call(this);
@@ -127,6 +213,11 @@
                     this.suggestedLocation = new jssim.Vector2D((Math.random() - 0.5) * ((XMAX - XMIN) / 5 - DIAMETER) + this.agentLocation.x,
                         (Math.random() - 0.5) * ((YMAX - YMIN) / 5 - DIAMETER) + this.agentLocation.y);
                     this.steps = 100;
+                    bears = [
+                        ...bears,
+                        new jssim.Vector2D((Math.random() - 0.5) * ((XMAX - XMIN) / 5 - DIAMETER) + this.agentLocation.x,
+                            (Math.random() - 0.5) * ((YMAX - YMIN) / 5 - DIAMETER) + this.agentLocation.y)
+                    ].slice(-100)
                 }
                 this.desiredLocation = this.suggestedLocation;
             }
@@ -200,6 +291,11 @@
                 if (this.steps <= 0) {
                     this.suggestedLocation = new jssim.Vector2D((Math.random() - 0.5) * ((XMAX - XMIN) / 5 - DIAMETER) + this.agentLocation.x,
                         (Math.random() - 0.5) * ((YMAX - YMIN) / 5 - DIAMETER) + this.agentLocation.y);
+                    bulls = [
+                        ...bulls,
+                        new jssim.Vector2D((Math.random() - 0.5) * ((XMAX - XMIN) / 5 - DIAMETER) + this.agentLocation.x,
+                            (Math.random() - 0.5) * ((YMAX - YMIN) / 5 - DIAMETER) + this.agentLocation.y)
+                    ].slice(-100)
                     this.steps = 100;
                 }
                 this.desiredLocation = this.suggestedLocation;
@@ -303,8 +399,10 @@
                     'false': nft_increase_icon
                 }
             }
+            charts[this.id] = {x: pos.x, y: pos.y}
             context.drawImage(
-                images[this.id][this.infected],
+                // images[this.id][this.infected],
+                images[this.id][getAmount(bears, this.id) > getAmount(bulls, this.id)],
                 pos.x, pos.y,
                 100, 100
             );
@@ -362,7 +460,7 @@
             scheduler.reset();
             space.reset();
 
-            for (var x = 0; x < NUM_OF_CHARTS + NUM_GOODS + NUM_EVILS; x++) {
+            for (var x = 0; x < NUM_OF_CHARTS + NUM_BULLS + NUM_BEARS; x++) {
                 var dx = Math.floor(Math.random() * 10) - 5;
                 var dy = Math.floor(Math.random() * 10) - 5;
 
@@ -375,11 +473,11 @@
                     if (x < NUM_OF_CHARTS)
                         // agent = new Human("Human" + x, new jssim.Vector2D(XMAX / 2, YMAX / 2), space);
                         agent = new Human("Human" + x, loc, space);
-                    else if (x < NUM_OF_CHARTS + NUM_GOODS) {
+                    else if (x < NUM_OF_CHARTS + NUM_BULLS) {
                         agent = new Good("Good" + (x - NUM_OF_CHARTS), loc, space);
                         agent.greedy = Math.random() < 0.5;
                     } else {
-                        agent = new Evil("Evil" + (x - NUM_OF_CHARTS - NUM_GOODS), loc, space);
+                        agent = new Evil("Evil" + (x - NUM_OF_CHARTS - NUM_BULLS), loc, space);
                         agent.greedy = Math.random() < 0.5;
                     }
                     times++;
@@ -401,6 +499,15 @@
             }
             scheduler.update();
             space.render(canvas);
+
+            document.querySelector('.main-info-dollar-bears').innerHTML = `Bears: ${getAmount(bears, 'Human0')}`
+            document.querySelector('.main-info-dollar-bulls').innerHTML = `Bulls: ${getAmount(bulls, 'Human0')}`
+
+            document.querySelector('.main-info-bitcoin-bears').innerHTML = `Bears: ${getAmount(bears, 'Human1')}`
+            document.querySelector('.main-info-bitcoin-bulls').innerHTML = `Bulls: ${getAmount(bulls, 'Human1')}`
+
+            document.querySelector('.main-info-nft-bears').innerHTML = `Bears: ${getAmount(bears, 'Human2')}`
+            document.querySelector('.main-info-nft-bulls').innerHTML = `Bulls: ${getAmount(bulls, 'Human2')}`
             // document.getElementById("simTime").value = "Simulation Time: " + scheduler.current_time;
         }, 50);
     })();
